@@ -1,0 +1,35 @@
+{
+  "chart": {
+    "result": [
+      {
+        "meta": {
+          "currency": "USD",
+          "symbol": "AAPL",
+          "exchangeName": "NMS",
+          "fullExchangeName": "NasdaqGS",
+          "longName": "Apple Inc.",
+          "shortName": "Apple Inc.",
+          "regularMarketTime": 1787079592,
+          "regularMarketPrice": 310.44,
+          "regularMarketDayHigh": 311.49,
+          "regularMarketDayLow": 305.74,
+          "regularMarketVolume": 30714033,
+          "chartPreviousClose": 333.74
+        },
+        "timestamp": [1784554200, 1784640600, 1784727000],
+        "indicators": {
+          "quote": [
+            {
+              "open": [333.51, null],
+              "high": [333.71, null, 329.0],
+              "low": [323.68, null, 323.34],
+              "close": [326.59, null, 325.89],
+              "volume": [53468000, null]
+            }
+          ]
+        }
+      }
+    ],
+    "error": null
+  }
+}
