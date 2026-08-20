@@ -65,7 +65,6 @@ class StockStorageServiceIntegrationTest extends AbstractPostgresIntegrationTest
 		assertThat(latest.getSymbol()).isEqualTo(SYMBOL);
 		assertThat(latest.getCompanyName()).isEqualTo("Apple Inc.");
 		assertThat(latest.getCurrency()).isEqualTo("USD");
-		// Exact to the last decimal, not rounded through a float on the way to the column.
 		assertThat(latest.getPrice()).isEqualByComparingTo("312.10");
 		assertThat(latest.getPreviousClose()).isEqualByComparingTo("333.74");
 		assertThat(latest.getVolume()).isEqualTo(30714033L);
@@ -89,7 +88,6 @@ class StockStorageServiceIntegrationTest extends AbstractPostgresIntegrationTest
 		assertThat(history.getFirst().getVolume()).isEqualTo(53468000L);
 		assertThat(history.getFirst().getBarInterval()).isEqualTo("1d");
 
-		// A bar is identified by symbol, instant and interval, so the still-open session updates.
 		storageService.store(snapshot(new BigDecimal("312.10"), RETRIEVED.plusSeconds(300),
 				List.of(bar(SESSION, "331.02", 61000000L))), "1d");
 
@@ -99,7 +97,6 @@ class StockStorageServiceIntegrationTest extends AbstractPostgresIntegrationTest
 		assertThat(daily.getFirst().getVolume()).isEqualTo(61000000L);
 		assertThat(daily.getFirst().getRetrievedAt()).isEqualTo(RETRIEVED.plusSeconds(300));
 
-		// The same instant at a different interval is a different bar, not an update.
 		storageService.store(snapshot(new BigDecimal("312.10"), RETRIEVED, List.of(bar(SESSION, "331.02", 1L))), "1h");
 		assertThat(barRepository.count()).isEqualTo(4);
 		assertThat(storageService.history(SYMBOL, "1h")).hasSize(1);

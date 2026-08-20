@@ -94,7 +94,6 @@ class StockControllerTest {
 		given(storageService.latestQuote("AAPL")).willReturn(Optional.of(quoteEntity()));
 		given(storageService.history("AAPL", "1d")).willReturn(List.of(barEntity()));
 
-		// A client need not hard-code the ticker the backend polls.
 		mockMvc.perform(get("/stocks/default"))
 				.andExpect(status().isOk())
 				.andExpect(content().string("AAPL"));
@@ -113,8 +112,6 @@ class StockControllerTest {
 	@Test
 	@DisplayName("the quote endpoint accepts a lower-case symbol and returns money as an exact decimal string")
 	void returnsQuoteWithExactMoney() throws Exception {
-		// Scaled to the numeric(19,4) column, so a fresh and a stored quote read alike, and sent as
-		// a string so no precision is lost to the client's float64.
 		given(storageService.latestQuote("AAPL")).willReturn(Optional.of(quoteEntity("310.74505")));
 
 		mockMvc.perform(get("/stocks/aapl/quote"))
@@ -132,7 +129,6 @@ class StockControllerTest {
 		given(storageService.history("AAPL", "1d")).willReturn(List.of());
 		given(storageService.history(eq("AAPL"), eq("1d"), any(), any())).willReturn(List.of(barEntity()));
 
-		// An empty history is not an error.
 		mockMvc.perform(get("/stocks/AAPL/history"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$").isArray())
@@ -196,7 +192,6 @@ class StockControllerTest {
 				.andExpect(jsonPath("$.title").value("Symbol not found"))
 				.andExpect(jsonPath("$.symbol").value("ZZZZ"));
 
-		// A rejected request is the caller's problem: 400, not a 503 blaming the provider.
 		mockMvc.perform(post("/stocks/AAPL/refresh").param("interval", "bogus"))
 				.andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.type").value("urn:stocks:invalid-request"))
@@ -216,13 +211,11 @@ class StockControllerTest {
 	@Test
 	@DisplayName("a symbol or interval that could not be stored is rejected before anything is looked up")
 	void validatesSymbolAndInterval() throws Exception {
-		// Longer than the columns they are stored in.
 		mockMvc.perform(post("/stocks/AAPL/refresh").param("interval", "1decade-or-so"))
 				.andExpect(status().isBadRequest());
 		mockMvc.perform(get("/stocks/AAPLAAPLAAPLAAPLA/quote"))
 				.andExpect(status().isBadRequest());
 
-		// No ticker could spell this, on any endpoint that takes one.
 		mockMvc.perform(get("/stocks/AA$PL")).andExpect(status().isBadRequest());
 		mockMvc.perform(get("/stocks/AA$PL/quote")).andExpect(status().isBadRequest());
 		mockMvc.perform(get("/stocks/AA$PL/history")).andExpect(status().isBadRequest());
@@ -230,7 +223,6 @@ class StockControllerTest {
 
 		Mockito.verifyNoInteractions(storageService, retrievalService);
 
-		// Symbols the upstream really does spell with punctuation still get through.
 		given(storageService.latestQuote(anyString())).willReturn(Optional.of(quoteEntity()));
 		for (String symbol : List.of("BRK-B", "BRK.B", "^GSPC", "BTC-USD", "ES=F")) {
 			mockMvc.perform(get("/stocks/" + symbol + "/quote")).andExpect(status().isOk());

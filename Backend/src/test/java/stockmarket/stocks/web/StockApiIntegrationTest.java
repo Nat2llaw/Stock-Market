@@ -76,7 +76,6 @@ class StockApiIntegrationTest extends AbstractPostgresIntegrationTest {
 				.andExpect(jsonPath("$.symbol").value("AAPL"))
 				.andExpect(jsonPath("$.quote.price").value("310.4400"))
 				.andExpect(jsonPath("$.quote.retrievedAt").value("2026-08-18T12:00:00Z"))
-				// Stored and served back, so the client can date a session by its exchange.
 				.andExpect(jsonPath("$.quote.exchangeTimezone").value("America/New_York"))
 				.andExpect(jsonPath("$.history.length()").value(1))
 				.andExpect(jsonPath("$.history[0].close").value("326.5900"));

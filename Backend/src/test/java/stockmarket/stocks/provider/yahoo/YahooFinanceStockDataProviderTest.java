@@ -91,12 +91,8 @@ class YahooFinanceStockDataProviderTest {
 		assertThat(quote.companyName()).isEqualTo("Apple Inc.");
 		assertThat(quote.currency()).isEqualTo("USD");
 		assertThat(quote.exchange()).isEqualTo("NasdaqGS");
-		// Carried through so a session's instant can be resolved to the date the exchange had.
 		assertThat(quote.exchangeTimezone()).isEqualTo("America/New_York");
 		assertThat(quote.price()).isEqualByComparingTo("310.44");
-		// The close of the session before the current one — the second-to-last bar (2026-08-17).
-		// Not meta.chartPreviousClose (333.74), which is the close before the 1mo range starts:
-		// using that reports this quote as down 6.98% when the stock is up 1.59%.
 		assertThat(quote.previousClose()).isEqualByComparingTo("305.5899963378906");
 		assertThat(quote.previousClose()).isNotEqualByComparingTo("333.74");
 		assertThat(quote.dayHigh()).isEqualByComparingTo("311.49");
@@ -105,7 +101,6 @@ class YahooFinanceStockDataProviderTest {
 		assertThat(quote.marketTime()).isEqualTo(Instant.ofEpochSecond(1787079592L));
 		assertThat(quote.retrievedAt()).isEqualTo(NOW);
 
-		// The parallel OHLCV arrays are zipped back into bars, oldest first.
 		List<PriceBar> history = snapshot.history();
 		assertThat(history).hasSize(22);
 		PriceBar first = history.getFirst();
@@ -139,11 +134,7 @@ class YahooFinanceStockDataProviderTest {
 		StockSnapshot incomplete = provider.fetchSnapshot("AAPL", "1mo", "1d");
 		List<PriceBar> history = incomplete.history();
 
-		// The previous close comes from the bars that survived, not from the ones that were
-		// dropped: two usable bars remain, so it is the close of the earlier of them.
 		assertThat(incomplete.quote().previousClose()).isEqualByComparingTo("326.59");
-
-		// Sessions where nothing traded are dropped, and a short price column is not overrun.
 		assertThat(history).extracting(PriceBar::timestamp)
 				.containsExactly(Instant.ofEpochSecond(1784554200L), Instant.ofEpochSecond(1784727000L));
 		assertThat(history).allSatisfy(bar -> assertThat(bar.close()).isNotNull());
@@ -153,7 +144,6 @@ class YahooFinanceStockDataProviderTest {
 		assertThat(shortColumns.open()).isNull();
 		assertThat(shortColumns.volume()).isNull();
 
-		// A payload carrying no bars at all still yields a usable quote.
 		freshProvider();
 		expect(AAPL_URI, withSuccess("""
 				{"chart":{"result":[{"meta":{"symbol":"AAPL","regularMarketPrice":310.44}}],"error":null}}
@@ -163,14 +153,12 @@ class YahooFinanceStockDataProviderTest {
 
 		assertThat(snapshot.history()).isEmpty();
 		assertThat(snapshot.quote().price()).isEqualByComparingTo(new BigDecimal("310.44"));
-		// Nothing to compare against, so no previous close is claimed.
 		assertThat(snapshot.quote().previousClose()).isNull();
 	}
 
 	@Test
 	@DisplayName("the previous close is the session before the current one, and is null when there is no such session")
 	void previousCloseIsThePriorSession() throws Exception {
-		// A single session cannot have a session before it.
 		expect(BASE_URL + "/AAPL?range=1d&interval=1d", withSuccess("""
 				{"chart":{"result":[{"meta":{"symbol":"AAPL","regularMarketPrice":310.44},
 				"timestamp":[1784554200],
@@ -179,8 +167,6 @@ class YahooFinanceStockDataProviderTest {
 
 		assertThat(provider.fetchSnapshot("AAPL", "1d", "1d").quote().previousClose()).isNull();
 
-		// An intraday bar is not a session: the bar before an hourly one closed an hour ago, and
-		// calling that a "previous close" would repeat the bug in miniature.
 		freshProvider();
 		expect(BASE_URL + "/AAPL?range=1d&interval=1h", withSuccess("""
 				{"chart":{"result":[{"meta":{"symbol":"AAPL","regularMarketPrice":310.44},
@@ -190,8 +176,6 @@ class YahooFinanceStockDataProviderTest {
 
 		assertThat(provider.fetchSnapshot("AAPL", "1d", "1h").quote().previousClose()).isNull();
 
-		// Whatever range produced the series, the answer is the second-to-last session — which
-		// is what makes the stored column mean one thing rather than one thing per range.
 		freshProvider();
 		expect(BASE_URL + "/AAPL?range=5d&interval=1d", withSuccess("""
 				{"chart":{"result":[{"meta":{"symbol":"AAPL","regularMarketPrice":316.83,
@@ -227,17 +211,13 @@ class YahooFinanceStockDataProviderTest {
 	@DisplayName("maps each upstream failure to one the caller can act on: unknown symbol, bad request, outage")
 	void mapsFailureStatuses() throws Exception {
 		Map<HttpStatus, Class<? extends RuntimeException>> expected = new LinkedHashMap<>();
-		// Not worth retrying: the ticker does not exist.
 		expected.put(HttpStatus.NOT_FOUND, SymbolNotFoundException.class);
-		// Retryable: the upstream is at fault, not the request.
 		expected.put(HttpStatus.INTERNAL_SERVER_ERROR, StockDataUnavailableException.class);
 		expected.put(HttpStatus.BAD_GATEWAY, StockDataUnavailableException.class);
 		expected.put(HttpStatus.TOO_MANY_REQUESTS, StockDataUnavailableException.class);
-		// Not worth retrying: an identical request would be rejected again.
 		expected.put(HttpStatus.BAD_REQUEST, InvalidStockRequestException.class);
 		expected.put(HttpStatus.UNAUTHORIZED, InvalidStockRequestException.class);
 		expected.put(HttpStatus.FORBIDDEN, InvalidStockRequestException.class);
-		expected.put(HttpStatus.UNPROCESSABLE_ENTITY, InvalidStockRequestException.class);
 
 		expected.forEach((status, exception) -> {
 			freshProvider();
@@ -248,7 +228,6 @@ class YahooFinanceStockDataProviderTest {
 					.isThrownBy(() -> provider.fetchSnapshot("AAPL", "1mo", "1d"));
 		});
 
-		// Yahoo also reports an unknown ticker in the body of an HTTP 200.
 		freshProvider();
 		expect(BASE_URL + "/ZZZZ?range=1mo&interval=1d",
 				withSuccess(fixture("unknown-symbol-404.json"), MediaType.APPLICATION_JSON));

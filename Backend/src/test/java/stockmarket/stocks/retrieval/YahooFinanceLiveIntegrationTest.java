@@ -46,22 +46,12 @@ class YahooFinanceLiveIntegrationTest {
 			assertThat(bar.timestamp()).isNotNull();
 		});
 
-		// The quote's previous close is derived from the bars, and that derivation rests on one
-		// property of the upstream: the final bar is the session the current price belongs to —
-		// still moving while the market is open, settled once it shuts. Assert it against the
-		// real endpoint, because if it ever stops holding, the previous close silently becomes
-		// the wrong session and nothing else in the suite would notice.
-		// To the cent, not bit-for-bit: Yahoo rounds regularMarketPrice to cents while the bar
-		// closes arrive as raw float64 (316.83 against 316.8299865722656). Agreeing to the cent
-		// is what identifies the session; demanding more would fail on the noise alone.
 		List<PriceBar> bars = snapshot.history();
 		assertThat(bars.getLast().close())
 				.as("the last bar is the session regularMarketPrice belongs to")
 				.isCloseTo(snapshot.quote().price(), within(new BigDecimal("0.01")));
 		assertThat(bars).isSortedAccordingTo(Comparator.comparing(PriceBar::timestamp));
 
-		// And so the previous close is the session before it — never Yahoo's chartPreviousClose,
-		// which is the close before the requested range starts.
 		assertThat(snapshot.quote().previousClose())
 				.isEqualByComparingTo(bars.get(bars.size() - 2).close());
 
