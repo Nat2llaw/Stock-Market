@@ -1,0 +1,11 @@
+# Installed dependencies and build output are reproducible from package-lock.json,
+# so they are not committed. The Docker build runs npm install / npm run build itself.
+node_modules/
+dist/
+
+# Incremental TypeScript build state.
+tsconfig.tsbuildinfo
+
+# Test and tooling output.
+coverage/
+npm-debug.log*
