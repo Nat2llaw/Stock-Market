@@ -9,7 +9,9 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import jakarta.servlet.http.HttpServletRequest;
 import stockmarket.stocks.error.InvalidStockRequestException;
+import stockmarket.stocks.error.NoStoredDataException;
 import stockmarket.stocks.error.StockDataUnavailableException;
 import stockmarket.stocks.error.SymbolNotFoundException;
 
@@ -24,6 +26,17 @@ public class StockExceptionHandler {
 		problem.setType(URI.create("urn:stocks:symbol-not-found"));
 		problem.setTitle("Symbol not found");
 		problem.setProperty("symbol", ex.getSymbol());
+		return problem;
+	}
+
+	@ExceptionHandler(NoStoredDataException.class)
+	public ProblemDetail handleNoStoredData(NoStoredDataException ex, HttpServletRequest request) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+		problem.setType(URI.create("urn:stocks:no-stored-data"));
+		problem.setTitle("No data collected yet");
+		problem.setProperty("symbol", ex.getSymbol());
+		problem.setProperty("hint",
+				"POST " + request.getContextPath() + "/stocks/" + ex.getSymbol() + "/refresh to retrieve it now");
 		return problem;
 	}
 
