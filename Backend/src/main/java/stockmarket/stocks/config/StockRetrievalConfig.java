@@ -1,5 +1,7 @@
 package stockmarket.stocks.config;
 
+import java.time.Clock;
+
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.HttpClientSettings;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +16,11 @@ import stockmarket.stocks.error.StockDataUnavailableException;
 
 @Configuration
 public class StockRetrievalConfig {
+
+	@Bean
+	public Clock clock() {
+		return Clock.systemUTC();
+	}
 
 	@Bean
 	public RestClient yahooRestClient(RestClient.Builder builder, YahooFinanceProperties properties) {
