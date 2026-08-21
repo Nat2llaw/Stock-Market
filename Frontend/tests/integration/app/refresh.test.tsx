@@ -13,7 +13,7 @@ describe('App refresh', () => {
   it('fetches fresh data for the monitored symbol, locked while the request is in flight', async () => {
     let release: (value: Response) => void = () => {};
     const fetchMock = routes({
-      symbol: () => new Response('MSFT', { status: 200 }),
+      symbol: () => jsonResponse({ symbol: 'MSFT' }),
       refresh: () =>
         new Promise<Response>((resolve) => {
           release = resolve;

@@ -21,6 +21,7 @@ import stockmarket.stocks.persistence.entity.StockPriceBarEntity;
 import stockmarket.stocks.persistence.entity.StockQuoteEntity;
 import stockmarket.stocks.service.StockRetrievalService;
 import stockmarket.stocks.service.StockStorageService;
+import stockmarket.stocks.web.dto.DefaultSymbolResponse;
 import stockmarket.stocks.web.dto.PriceBarResponse;
 import stockmarket.stocks.web.dto.QuoteResponse;
 import stockmarket.stocks.web.dto.StockOverviewResponse;
@@ -43,8 +44,8 @@ public class StockController {
 	}
 
 	@GetMapping("/default")
-	public String defaultSymbol() {
-		return properties.defaultSymbol();
+	public DefaultSymbolResponse defaultSymbol() {
+		return new DefaultSymbolResponse(properties.defaultSymbol());
 	}
 
 	@GetMapping("/{symbol}")

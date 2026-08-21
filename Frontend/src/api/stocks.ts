@@ -31,14 +31,14 @@ export interface StockOverview {
   history: PriceBar[];
 }
 
-export interface QuotePayload extends Omit<Quote, 'price' | 'previousClose' | 'dayHigh' | 'dayLow'> {
+interface QuotePayload extends Omit<Quote, 'price' | 'previousClose' | 'dayHigh' | 'dayLow'> {
   price: string;
   previousClose: string | null;
   dayHigh: string | null;
   dayLow: string | null;
 }
 
-export interface PriceBarPayload extends Omit<PriceBar, 'open' | 'high' | 'low' | 'close'> {
+interface PriceBarPayload extends Omit<PriceBar, 'open' | 'high' | 'low' | 'close'> {
   open: string | null;
   high: string | null;
   low: string | null;
@@ -99,12 +99,12 @@ const BASE = '/api';
 
 export const DEFAULT_SYMBOL = 'AAPL';
 
-async function send(path: string, accept: string, init?: RequestInit): Promise<Response> {
+async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {
       ...init,
-      headers: { Accept: accept, ...init?.headers },
+      headers: { Accept: 'application/json', ...init?.headers },
     });
   } catch {
     throw new ApiError(0, 'Cannot reach the server', 'The API did not respond. Is the backend running?', false);
@@ -113,15 +113,7 @@ async function send(path: string, accept: string, init?: RequestInit): Promise<R
   if (!response.ok) {
     throw await toApiError(response);
   }
-  return response;
-}
-
-async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  return (await (await send(path, 'application/json', init)).json()) as T;
-}
-
-async function requestText(path: string): Promise<string> {
-  return (await (await send(path, 'text/plain')).text()).trim();
+  return (await response.json()) as T;
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -138,9 +130,14 @@ async function toApiError(response: Response): Promise<ApiError> {
   }
 }
 
+/**
+ * Never throws: the page needs a ticker to label itself and to refresh against, and a deployment
+ * that cannot say which one it monitors is still more usable pointed at the default than blank.
+ */
 export async function fetchDefaultSymbol(): Promise<string> {
   try {
-    return (await requestText('/stocks/default')) || DEFAULT_SYMBOL;
+    const { symbol } = await requestJson<{ symbol: string | null }>('/stocks/default');
+    return symbol?.trim() || DEFAULT_SYMBOL;
   } catch {
     return DEFAULT_SYMBOL;
   }

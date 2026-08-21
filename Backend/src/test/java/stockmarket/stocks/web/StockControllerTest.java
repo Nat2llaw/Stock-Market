@@ -22,7 +22,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,7 +87,7 @@ class StockControllerTest {
 
 		mockMvc.perform(get("/stocks/default"))
 				.andExpect(status().isOk())
-				.andExpect(content().string("AAPL"));
+				.andExpect(jsonPath("$.symbol").value("AAPL"));
 
 		mockMvc.perform(get("/stocks/AAPL"))
 				.andExpect(status().isOk())

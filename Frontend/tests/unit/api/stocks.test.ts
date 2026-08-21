@@ -99,13 +99,16 @@ describe('refresh', () => {
 });
 
 describe('fetchDefaultSymbol', () => {
-  it('reads the monitored ticker as trimmed plain text, and falls back to AAPL rather than leaving the page symbolless', async () => {
-    fetchMock.mockResolvedValue(new Response('MSFT\n', { status: 200 }));
+  it('reads the monitored ticker from JSON, and falls back to AAPL rather than leaving the page symbolless', async () => {
+    fetchMock.mockResolvedValue(jsonResponse({ symbol: 'MSFT' }));
     expect(await fetchDefaultSymbol()).toBe('MSFT');
     expect(fetchMock).toHaveBeenCalledWith('/api/stocks/default', expect.anything());
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({ headers: { Accept: 'text/plain' } });
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ headers: { Accept: 'application/json' } });
 
-    fetchMock.mockResolvedValue(new Response('   ', { status: 200 }));
+    fetchMock.mockResolvedValue(jsonResponse({ symbol: '   ' }));
+    expect(await fetchDefaultSymbol()).toBe(DEFAULT_SYMBOL);
+
+    fetchMock.mockResolvedValue(jsonResponse({ symbol: null }));
     expect(await fetchDefaultSymbol()).toBe(DEFAULT_SYMBOL);
 
     fetchMock.mockResolvedValue(new Response('', { status: 500 }));
