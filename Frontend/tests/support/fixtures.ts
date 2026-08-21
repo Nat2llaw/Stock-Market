@@ -33,11 +33,6 @@ export function aBar(overrides: Partial<PriceBar> = {}): PriceBar {
   };
 }
 
-/**
- * The same overview in the shape the API actually sends it: money as exact decimal strings, at the
- * scale the backend's numeric(19,4) columns store. Tests that stand in for the server hand this to
- * `fetch`, so they exercise the parsing the app really does rather than a friendlier stand-in.
- */
 export function asPayload(overview: StockOverview): StockOverviewPayload {
   return {
     ...overview,

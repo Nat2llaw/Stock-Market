@@ -8,7 +8,6 @@ interface Props {
   history: PriceBar[];
   currency: string | null;
   interval: string;
-  /** Zone the exchange trades in; sessions are dated in it, not in the reader's. */
   timeZone: string | null;
 }
 

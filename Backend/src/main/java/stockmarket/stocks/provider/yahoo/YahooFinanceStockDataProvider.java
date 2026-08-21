@@ -46,11 +46,6 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		this.clock = clock;
 	}
 
-	/**
-	 * The symbol is expected already normalised and the range and interval already resolved: this
-	 * is an adapter onto one upstream, and which ticker the application monitors or how much
-	 * history it asks for are decisions that belong above it, not here.
-	 */
 	@Override
 	public StockSnapshot fetchSnapshot(String symbol, String range, String interval) {
 		return map(symbol, interval, get(symbol, range, interval));
@@ -122,7 +117,6 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		return new StockSnapshot(mapQuote(symbol, result.meta(), history, interval), history);
 	}
 
-	/** The upstream payload is untrusted; every shape we depend on is asserted before it is read. */
 	private static void require(boolean condition, String symbol, String whatWasWrong) {
 		if (!condition) {
 			throw new StockDataUnavailableException(symbol,

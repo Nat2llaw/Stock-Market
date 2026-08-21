@@ -3,7 +3,6 @@ export interface Quote {
   companyName: string | null;
   currency: string | null;
   exchange: string | null;
-  /** IANA zone of the exchange; what dates a session. See `formatDate`. */
   exchangeTimezone: string | null;
   price: number;
   previousClose: number | null;
@@ -130,10 +129,6 @@ async function toApiError(response: Response): Promise<ApiError> {
   }
 }
 
-/**
- * Never throws: the page needs a ticker to label itself and to refresh against, and a deployment
- * that cannot say which one it monitors is still more usable pointed at the default than blank.
- */
 export async function fetchDefaultSymbol(): Promise<string> {
   try {
     const { symbol } = await requestJson<{ symbol: string | null }>('/stocks/default');

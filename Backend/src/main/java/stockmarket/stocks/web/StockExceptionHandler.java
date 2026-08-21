@@ -53,10 +53,6 @@ public class StockExceptionHandler {
 		return problem;
 	}
 
-	/**
-	 * The upstream's own message is logged, never returned: a detail is only passed in here when
-	 * it is safe for a client to read.
-	 */
 	private static ProblemDetail problem(HttpStatus status, String type, String title, String detail, String symbol) {
 		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
 		problem.setType(URI.create("urn:stocks:" + type));

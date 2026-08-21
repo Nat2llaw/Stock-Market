@@ -26,7 +26,6 @@ export function formatDate(iso: string, timeZone: string | null): string {
   try {
     return date.toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: timeZone ?? 'UTC' });
   } catch {
-    // An unrecognised zone name makes Intl throw rather than degrade.
     return date.toLocaleDateString(undefined, { dateStyle: 'medium', timeZone: 'UTC' });
   }
 }

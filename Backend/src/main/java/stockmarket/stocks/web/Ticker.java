@@ -12,14 +12,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
-/**
- * A ticker symbol: constrained to the width of the {@code varchar(16)} column it lands in, and
- * to the shape real symbols take — letters, digits, and the punctuation they use ({@code BRK-B},
- * {@code BRK.B}, {@code ^GSPC}, {@code BTC-USD}, {@code ES=F}).
- * <p>
- * Composed once rather than repeated per handler, so every endpoint is constrained identically
- * by construction and a new endpoint cannot be added with a weaker rule by accident.
- */
 @NotBlank
 @Size(max = 16)
 @Pattern(regexp = "[A-Za-z0-9.^=-]+")

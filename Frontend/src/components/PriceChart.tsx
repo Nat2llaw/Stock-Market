@@ -4,7 +4,6 @@ import { formatDate, formatMoney } from '../format';
 interface Props {
   history: PriceBar[];
   currency: string | null;
-  /** Zone the exchange trades in; sessions are dated in it, not in the reader's. */
   timeZone: string | null;
 }
 
