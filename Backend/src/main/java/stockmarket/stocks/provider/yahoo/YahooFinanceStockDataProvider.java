@@ -46,14 +46,14 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		this.clock = clock;
 	}
 
+	/**
+	 * The symbol is expected already normalised and the range and interval already resolved: this
+	 * is an adapter onto one upstream, and which ticker the application monitors or how much
+	 * history it asks for are decisions that belong above it, not here.
+	 */
 	@Override
 	public StockSnapshot fetchSnapshot(String symbol, String range, String interval) {
-		String normalisedSymbol = normalise(symbol);
-		String effectiveRange = blankToDefault(range, properties.defaultRange());
-		String effectiveInterval = blankToDefault(interval, properties.defaultInterval());
-
-		YahooChartResponse response = get(normalisedSymbol, effectiveRange, effectiveInterval);
-		return map(normalisedSymbol, effectiveInterval, response);
+		return map(symbol, interval, get(symbol, range, interval));
 	}
 
 	private YahooChartResponse get(String symbol, String range, String interval) {
@@ -210,14 +210,4 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		return epochSeconds == null ? null : Instant.ofEpochSecond(epochSeconds);
 	}
 
-	private String normalise(String symbol) {
-		if (symbol == null || symbol.isBlank()) {
-			return properties.defaultSymbol();
-		}
-		return symbol.strip().toUpperCase(Locale.ROOT);
-	}
-
-	private static String blankToDefault(String value, String fallback) {
-		return value == null || value.isBlank() ? fallback : value;
-	}
 }

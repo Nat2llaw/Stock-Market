@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import stockmarket.stocks.config.YahooFinanceProperties;
 import stockmarket.stocks.domain.StockSnapshot;
@@ -35,8 +33,6 @@ import stockmarket.stocks.web.dto.StockOverviewResponse;
 public class StockController {
 
 	private static final Logger log = LoggerFactory.getLogger(StockController.class);
-
-	private static final String SYMBOL_PATTERN = "[A-Za-z0-9.^=-]+";
 
 	private final StockStorageService storageService;
 	private final StockRetrievalService retrievalService;
@@ -58,10 +54,10 @@ public class StockController {
 
 	@GetMapping("/{symbol}")
 	public StockOverviewResponse overview(
-			@PathVariable @NotBlank @Size(max = 16) @Pattern(regexp = SYMBOL_PATTERN) String symbol,
+			@PathVariable @Ticker String symbol,
 			@RequestParam(required = false) String interval) {
 		String normalisedSymbol = normalise(symbol);
-		String effectiveInterval = intervalOrDefault(interval);
+		String effectiveInterval = orDefault(interval, properties.defaultInterval());
 
 		return new StockOverviewResponse(
 				normalisedSymbol,
@@ -72,19 +68,19 @@ public class StockController {
 
 	@GetMapping("/{symbol}/quote")
 	public QuoteResponse quote(
-			@PathVariable @NotBlank @Size(max = 16) @Pattern(regexp = SYMBOL_PATTERN) String symbol) {
+			@PathVariable @Ticker String symbol) {
 		return QuoteResponse.from(requireQuote(normalise(symbol)));
 	}
 
 	@GetMapping("/{symbol}/history")
 	public List<PriceBarResponse> history(
-			@PathVariable @NotBlank @Size(max = 16) @Pattern(regexp = SYMBOL_PATTERN) String symbol,
+			@PathVariable @Ticker String symbol,
 			@RequestParam(required = false) String interval,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
 
 		String normalisedSymbol = normalise(symbol);
-		String effectiveInterval = intervalOrDefault(interval);
+		String effectiveInterval = orDefault(interval, properties.defaultInterval());
 
 		if (from == null && to == null) {
 			return toResponses(storageService.history(normalisedSymbol, effectiveInterval));
@@ -96,13 +92,13 @@ public class StockController {
 
 	@PostMapping("/{symbol}/refresh")
 	public ResponseEntity<StockOverviewResponse> refresh(
-			@PathVariable @NotBlank @Size(max = 16) @Pattern(regexp = SYMBOL_PATTERN) String symbol,
+			@PathVariable @Ticker String symbol,
 			@RequestParam(required = false) String range,
 			@RequestParam(required = false) @Size(max = 8) String interval) {
 
 		String normalisedSymbol = normalise(symbol);
-		String effectiveInterval = intervalOrDefault(interval);
-		String effectiveRange = range == null || range.isBlank() ? properties.defaultRange() : range;
+		String effectiveInterval = orDefault(interval, properties.defaultInterval());
+		String effectiveRange = orDefault(range, properties.defaultRange());
 
 		StockSnapshot snapshot = retrievalService.fetchSnapshot(normalisedSymbol, effectiveRange, effectiveInterval);
 		StockQuoteEntity stored = storageService.store(snapshot, effectiveInterval);
@@ -119,8 +115,8 @@ public class StockController {
 		return storageService.latestQuote(symbol).orElseThrow(() -> new NoStoredDataException(symbol));
 	}
 
-	private String intervalOrDefault(String interval) {
-		return interval == null || interval.isBlank() ? properties.defaultInterval() : interval;
+	private static String orDefault(String value, String fallback) {
+		return value == null || value.isBlank() ? fallback : value;
 	}
 
 	private static String normalise(String symbol) {
