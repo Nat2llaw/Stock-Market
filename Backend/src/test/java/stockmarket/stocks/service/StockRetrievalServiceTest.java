@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.retry.RetryPolicy;
 import org.springframework.core.retry.RetryTemplate;
 
-import stockmarket.stocks.config.YahooFinanceProperties;
 import stockmarket.stocks.domain.StockQuote;
 import stockmarket.stocks.domain.StockSnapshot;
 import stockmarket.stocks.error.InvalidStockRequestException;
@@ -32,12 +31,7 @@ class StockRetrievalServiceTest {
 				.maxDelay(Duration.ofMillis(1))
 				.includes(StockDataUnavailableException.class)
 				.build();
-		return new StockRetrievalService(provider, new RetryTemplate(policy), properties());
-	}
-
-	private static YahooFinanceProperties properties() {
-		return new YahooFinanceProperties("http://localhost", Duration.ofSeconds(5), Duration.ofSeconds(10), 3,
-				Duration.ofMillis(1), Duration.ofMillis(1), 2.0, SYMBOL, "1mo", "1d", "test-agent");
+		return new StockRetrievalService(provider, new RetryTemplate(policy));
 	}
 
 	private static StockSnapshot snapshot() {
@@ -73,11 +67,11 @@ class StockRetrievalServiceTest {
 	}
 
 	@Test
-	@DisplayName("the default-symbol entry point uses the configured ticker and does not retry a success")
+	@DisplayName("passes the requested symbol, range and interval straight through and does not retry a success")
 	void succeedsFirstTimeUsingTheConfiguredDefaults() {
 		CountingProvider provider = new CountingProvider(StockRetrievalServiceTest::snapshot);
 
-		StockSnapshot result = serviceWith(provider, 3).fetchDefaultSnapshot();
+		StockSnapshot result = serviceWith(provider, 3).fetchSnapshot(SYMBOL, "1mo", "1d");
 
 		assertThat(result.quote().symbol()).isEqualTo(SYMBOL);
 		assertThat(provider.arguments).containsExactly("AAPL", "1mo", "1d");

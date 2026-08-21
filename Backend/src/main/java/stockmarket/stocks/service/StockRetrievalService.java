@@ -4,7 +4,6 @@ import org.springframework.core.retry.RetryException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.stereotype.Service;
 
-import stockmarket.stocks.config.YahooFinanceProperties;
 import stockmarket.stocks.domain.StockSnapshot;
 import stockmarket.stocks.error.StockDataException;
 import stockmarket.stocks.error.StockDataUnavailableException;
@@ -15,21 +14,10 @@ public class StockRetrievalService {
 
 	private final StockDataProvider provider;
 	private final RetryTemplate retryTemplate;
-	private final YahooFinanceProperties properties;
 
-	public StockRetrievalService(StockDataProvider provider, RetryTemplate stockRetrievalRetryTemplate,
-			YahooFinanceProperties properties) {
+	public StockRetrievalService(StockDataProvider provider, RetryTemplate stockRetrievalRetryTemplate) {
 		this.provider = provider;
 		this.retryTemplate = stockRetrievalRetryTemplate;
-		this.properties = properties;
-	}
-
-	public StockSnapshot fetchDefaultSnapshot() {
-		return fetchSnapshot(properties.defaultSymbol());
-	}
-
-	public StockSnapshot fetchSnapshot(String symbol) {
-		return fetchSnapshot(symbol, properties.defaultRange(), properties.defaultInterval());
 	}
 
 	public StockSnapshot fetchSnapshot(String symbol, String range, String interval) {

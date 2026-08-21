@@ -103,8 +103,8 @@ async function send(path: string, accept: string, init?: RequestInit): Promise<R
   let response: Response;
   try {
     response = await fetch(`${BASE}${path}`, {
-      headers: { Accept: accept },
       ...init,
+      headers: { Accept: accept, ...init?.headers },
     });
   } catch {
     throw new ApiError(0, 'Cannot reach the server', 'The API did not respond. Is the backend running?', false);

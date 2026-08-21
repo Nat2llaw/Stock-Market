@@ -22,19 +22,13 @@ public class StockExceptionHandler {
 
 	@ExceptionHandler(SymbolNotFoundException.class)
 	public ProblemDetail handleSymbolNotFound(SymbolNotFoundException ex) {
-		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-		problem.setType(URI.create("urn:stocks:symbol-not-found"));
-		problem.setTitle("Symbol not found");
-		problem.setProperty("symbol", ex.getSymbol());
-		return problem;
+		return problem(HttpStatus.NOT_FOUND, "symbol-not-found", "Symbol not found", ex.getMessage(), ex.getSymbol());
 	}
 
 	@ExceptionHandler(NoStoredDataException.class)
 	public ProblemDetail handleNoStoredData(NoStoredDataException ex, HttpServletRequest request) {
-		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
-		problem.setType(URI.create("urn:stocks:no-stored-data"));
-		problem.setTitle("No data collected yet");
-		problem.setProperty("symbol", ex.getSymbol());
+		ProblemDetail problem = problem(HttpStatus.NOT_FOUND, "no-stored-data", "No data collected yet",
+				ex.getMessage(), ex.getSymbol());
 		problem.setProperty("hint",
 				"POST " + request.getContextPath() + "/stocks/" + ex.getSymbol() + "/refresh to retrieve it now");
 		return problem;
@@ -44,24 +38,30 @@ public class StockExceptionHandler {
 	public ProblemDetail handleInvalidRequest(InvalidStockRequestException ex) {
 		log.warn("Upstream rejected the request for {}: {}", ex.getSymbol(), ex.getMessage());
 
-		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST,
-				"The stock data provider rejected the request. Check the range and interval.");
-		problem.setType(URI.create("urn:stocks:invalid-request"));
-		problem.setTitle("Invalid request");
-		problem.setProperty("symbol", ex.getSymbol());
-		return problem;
+		return problem(HttpStatus.BAD_REQUEST, "invalid-request", "Invalid request",
+				"The stock data provider rejected the request. Check the range and interval.", ex.getSymbol());
 	}
 
 	@ExceptionHandler(StockDataUnavailableException.class)
 	public ProblemDetail handleUnavailable(StockDataUnavailableException ex) {
 		log.warn("Upstream unavailable for {}: {}", ex.getSymbol(), ex.getMessage());
 
-		ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.SERVICE_UNAVAILABLE,
-				"The stock data provider could not be reached. Any stored data remains available.");
-		problem.setType(URI.create("urn:stocks:upstream-unavailable"));
-		problem.setTitle("Stock data provider unavailable");
-		problem.setProperty("symbol", ex.getSymbol());
+		ProblemDetail problem = problem(HttpStatus.SERVICE_UNAVAILABLE, "upstream-unavailable",
+				"Stock data provider unavailable",
+				"The stock data provider could not be reached. Any stored data remains available.", ex.getSymbol());
 		problem.setProperty("retryAfterSeconds", 30);
+		return problem;
+	}
+
+	/**
+	 * The upstream's own message is logged, never returned: a detail is only passed in here when
+	 * it is safe for a client to read.
+	 */
+	private static ProblemDetail problem(HttpStatus status, String type, String title, String detail, String symbol) {
+		ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
+		problem.setType(URI.create("urn:stocks:" + type));
+		problem.setTitle(title);
+		problem.setProperty("symbol", symbol);
 		return problem;
 	}
 }
