@@ -2,8 +2,8 @@ FROM node:22-alpine AS build
 WORKDIR /build
 
 # package.json first, so a source edit does not reinstall node_modules.
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 

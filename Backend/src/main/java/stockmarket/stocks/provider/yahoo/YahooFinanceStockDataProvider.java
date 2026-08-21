@@ -46,14 +46,14 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		this.clock = clock;
 	}
 
+	/**
+	 * The symbol is expected already normalised and the range and interval already resolved: this
+	 * is an adapter onto one upstream, and which ticker the application monitors or how much
+	 * history it asks for are decisions that belong above it, not here.
+	 */
 	@Override
 	public StockSnapshot fetchSnapshot(String symbol, String range, String interval) {
-		String normalisedSymbol = normalise(symbol);
-		String effectiveRange = blankToDefault(range, properties.defaultRange());
-		String effectiveInterval = blankToDefault(interval, properties.defaultInterval());
-
-		YahooChartResponse response = get(normalisedSymbol, effectiveRange, effectiveInterval);
-		return map(normalisedSymbol, effectiveInterval, response);
+		return map(symbol, interval, get(symbol, range, interval));
 	}
 
 	private YahooChartResponse get(String symbol, String range, String interval) {
@@ -101,10 +101,7 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 	}
 
 	private StockSnapshot map(String symbol, String interval, YahooChartResponse response) {
-		if (response == null || response.chart() == null) {
-			throw new StockDataUnavailableException(symbol,
-					"Yahoo Finance returned an empty response for '" + symbol + "'");
-		}
+		require(response != null && response.chart() != null, symbol, "an empty response");
 
 		YahooChartResponse.ChartError error = response.chart().error();
 		if (error != null) {
@@ -116,27 +113,26 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		}
 
 		List<YahooChartResponse.Result> results = response.chart().result();
-		if (results == null || results.isEmpty() || results.getFirst() == null) {
-			throw new StockDataUnavailableException(symbol,
-					"Yahoo Finance returned no result for '" + symbol + "'");
-		}
+		require(results != null && !results.isEmpty() && results.getFirst() != null, symbol, "no result");
 
 		YahooChartResponse.Result result = results.getFirst();
-		if (result.meta() == null) {
-			throw new StockDataUnavailableException(symbol,
-					"Yahoo Finance returned a result without metadata for '" + symbol + "'");
-		}
+		require(result.meta() != null, symbol, "a result without metadata");
 
 		List<PriceBar> history = mapHistory(result);
 		return new StockSnapshot(mapQuote(symbol, result.meta(), history, interval), history);
 	}
 
+	/** The upstream payload is untrusted; every shape we depend on is asserted before it is read. */
+	private static void require(boolean condition, String symbol, String whatWasWrong) {
+		if (!condition) {
+			throw new StockDataUnavailableException(symbol,
+					"Yahoo Finance returned " + whatWasWrong + " for '" + symbol + "'");
+		}
+	}
+
 	private StockQuote mapQuote(String symbol, YahooChartResponse.Meta meta, List<PriceBar> history,
 			String interval) {
-		if (meta.regularMarketPrice() == null) {
-			throw new StockDataUnavailableException(symbol,
-					"Yahoo Finance returned no current price for '" + symbol + "'");
-		}
+		require(meta.regularMarketPrice() != null, symbol, "no current price");
 
 		return new StockQuote(
 				meta.symbol() != null ? meta.symbol() : symbol,
@@ -214,14 +210,4 @@ public class YahooFinanceStockDataProvider implements StockDataProvider {
 		return epochSeconds == null ? null : Instant.ofEpochSecond(epochSeconds);
 	}
 
-	private String normalise(String symbol) {
-		if (symbol == null || symbol.isBlank()) {
-			return properties.defaultSymbol();
-		}
-		return symbol.strip().toUpperCase(Locale.ROOT);
-	}
-
-	private static String blankToDefault(String value, String fallback) {
-		return value == null || value.isBlank() ? fallback : value;
-	}
 }

@@ -1,10 +1,8 @@
 package stockmarket.stocks.web;
 
 import java.math.BigDecimal;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +22,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,7 +43,6 @@ class StockControllerTest {
 
 	private static final Instant RETRIEVED = Instant.parse("2026-08-18T12:00:00Z");
 	private static final Instant SESSION = Instant.parse("2026-08-17T13:30:00Z");
-	private static final Instant NOW = Instant.parse("2026-08-18T12:05:00Z");
 
 	@TestConfiguration
 	static class Properties {
@@ -55,11 +51,6 @@ class StockControllerTest {
 		YahooFinanceProperties yahooFinanceProperties() {
 			return new YahooFinanceProperties("http://localhost", Duration.ofSeconds(5), Duration.ofSeconds(10), 3,
 					Duration.ofMillis(1), Duration.ofMillis(1), 2.0, "AAPL", "1mo", "1d", "test-agent");
-		}
-
-		@Bean
-		Clock clock() {
-			return Clock.fixed(NOW, ZoneOffset.UTC);
 		}
 	}
 
@@ -96,7 +87,7 @@ class StockControllerTest {
 
 		mockMvc.perform(get("/stocks/default"))
 				.andExpect(status().isOk())
-				.andExpect(content().string("AAPL"));
+				.andExpect(jsonPath("$.symbol").value("AAPL"));
 
 		mockMvc.perform(get("/stocks/AAPL"))
 				.andExpect(status().isOk())
@@ -110,41 +101,19 @@ class StockControllerTest {
 	}
 
 	@Test
-	@DisplayName("the quote endpoint accepts a lower-case symbol and returns money as an exact decimal string")
-	void returnsQuoteWithExactMoney() throws Exception {
+	@DisplayName("a lower-case symbol is one resource with its upper-case form, and money is an exact decimal string")
+	void normalisesTheSymbolAndSerialisesMoneyExactly() throws Exception {
 		given(storageService.latestQuote("AAPL")).willReturn(Optional.of(quoteEntity("310.74505")));
-
-		mockMvc.perform(get("/stocks/aapl/quote"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.price").value("310.7451"))
-				.andExpect(jsonPath("$.price").isString())
-				.andExpect(jsonPath("$.previousClose").isString())
-				.andExpect(jsonPath("$.volume").isNumber())
-				.andExpect(jsonPath("$.marketTime").value("2026-08-18T11:59:52Z"));
-	}
-
-	@Test
-	@DisplayName("history is a list that honours a date window, closed at the injected clock when left open")
-	void returnsHistory() throws Exception {
 		given(storageService.history("AAPL", "1d")).willReturn(List.of());
-		given(storageService.history(eq("AAPL"), eq("1d"), any(), any())).willReturn(List.of(barEntity()));
 
-		mockMvc.perform(get("/stocks/AAPL/history"))
+		mockMvc.perform(get("/stocks/aapl"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$").isArray())
-				.andExpect(jsonPath("$.length()").value(0));
-
-		mockMvc.perform(get("/stocks/AAPL/history")
-						.param("from", "2026-08-01T00:00:00Z")
-						.param("to", "2026-08-18T00:00:00Z"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
-
-		mockMvc.perform(get("/stocks/AAPL/history").param("from", "2026-08-01T00:00:00Z"))
-				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.length()").value(1));
-
-		Mockito.verify(storageService).history("AAPL", "1d", Instant.parse("2026-08-01T00:00:00Z"), NOW);
+				.andExpect(jsonPath("$.symbol").value("AAPL"))
+				.andExpect(jsonPath("$.quote.price").value("310.7451"))
+				.andExpect(jsonPath("$.quote.price").isString())
+				.andExpect(jsonPath("$.quote.previousClose").isString())
+				.andExpect(jsonPath("$.quote.volume").isNumber())
+				.andExpect(jsonPath("$.quote.marketTime").value("2026-08-18T11:59:52Z"));
 	}
 
 	@Test
@@ -152,7 +121,7 @@ class StockControllerTest {
 	void reportsNoStoredData() throws Exception {
 		given(storageService.latestQuote("MSFT")).willReturn(Optional.empty());
 
-		mockMvc.perform(get("/stocks/MSFT/quote"))
+		mockMvc.perform(get("/stocks/MSFT"))
 				.andExpect(status().isNotFound())
 				.andExpect(jsonPath("$.title").value("No data collected yet"))
 				.andExpect(jsonPath("$.symbol").value("MSFT"))
@@ -213,19 +182,18 @@ class StockControllerTest {
 	void validatesSymbolAndInterval() throws Exception {
 		mockMvc.perform(post("/stocks/AAPL/refresh").param("interval", "1decade-or-so"))
 				.andExpect(status().isBadRequest());
-		mockMvc.perform(get("/stocks/AAPLAAPLAAPLAAPLA/quote"))
+		mockMvc.perform(get("/stocks/AAPLAAPLAAPLAAPLA"))
 				.andExpect(status().isBadRequest());
 
 		mockMvc.perform(get("/stocks/AA$PL")).andExpect(status().isBadRequest());
-		mockMvc.perform(get("/stocks/AA$PL/quote")).andExpect(status().isBadRequest());
-		mockMvc.perform(get("/stocks/AA$PL/history")).andExpect(status().isBadRequest());
 		mockMvc.perform(post("/stocks/AA$PL/refresh")).andExpect(status().isBadRequest());
 
 		Mockito.verifyNoInteractions(storageService, retrievalService);
 
 		given(storageService.latestQuote(anyString())).willReturn(Optional.of(quoteEntity()));
+		given(storageService.history(anyString(), anyString())).willReturn(List.of());
 		for (String symbol : List.of("BRK-B", "BRK.B", "^GSPC", "BTC-USD", "ES=F")) {
-			mockMvc.perform(get("/stocks/" + symbol + "/quote")).andExpect(status().isOk());
+			mockMvc.perform(get("/stocks/" + symbol)).andExpect(status().isOk());
 		}
 	}
 }

@@ -115,13 +115,14 @@ class YahooFinanceStockDataProviderTest {
 	}
 
 	@Test
-	@DisplayName("trims and upper-cases the symbol, and falls back to the defaults when it is blank")
+	@DisplayName("puts the requested symbol, range and interval into the upstream URI verbatim")
 	void buildsTheRequest() throws Exception {
 		expect(AAPL_URI, withSuccess(fixture("aapl-1mo-1d.json"), MediaType.APPLICATION_JSON));
-		expect(AAPL_URI, withSuccess(fixture("aapl-1mo-1d.json"), MediaType.APPLICATION_JSON));
+		expect(BASE_URL + "/BRK-B?range=5d&interval=1h",
+				withSuccess(fixture("aapl-1mo-1d.json"), MediaType.APPLICATION_JSON));
 
-		provider.fetchSnapshot("  aapl  ", "1mo", "1d");
-		provider.fetchSnapshot("  ", null, "");
+		provider.fetchSnapshot("AAPL", "1mo", "1d");
+		provider.fetchSnapshot("BRK-B", "5d", "1h");
 
 		server.verify();
 	}

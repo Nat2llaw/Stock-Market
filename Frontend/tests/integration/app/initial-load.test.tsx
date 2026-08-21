@@ -34,7 +34,7 @@ describe('App on first load', () => {
   });
 
   it('takes the ticker from the backend, trimmed, and falls back to AAPL when it names none', async () => {
-    const fetchMock = routes({ symbol: () => new Response('MSFT\n', { status: 200 }) });
+    const fetchMock = routes({ symbol: () => jsonResponse({ symbol: 'MSFT' }) });
     vi.stubGlobal('fetch', fetchMock);
 
     const named = render(<App />);
@@ -42,7 +42,7 @@ describe('App on first load', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/stocks/MSFT', expect.anything());
     named.unmount();
 
-    vi.stubGlobal('fetch', routes({ symbol: () => new Response('   ', { status: 200 }) }));
+    vi.stubGlobal('fetch', routes({ symbol: () => jsonResponse({ symbol: '   ' }) }));
 
     render(<App />);
     expect(await screen.findByText(/Tracking AAPL/)).toBeInTheDocument();

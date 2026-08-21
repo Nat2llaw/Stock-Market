@@ -23,7 +23,7 @@ export interface RouteHandlers {
 export function routes(handlers: RouteHandlers = {}) {
   return vi.fn(async (url: string, init?: RequestInit) => {
     if (url.endsWith('/stocks/default')) {
-      return handlers.symbol?.() ?? new Response('AAPL', { status: 200 });
+      return handlers.symbol?.() ?? jsonResponse({ symbol: 'AAPL' });
     }
     if (init?.method === 'POST') {
       return handlers.refresh?.() ?? jsonResponse(asPayload(anOverview()));
