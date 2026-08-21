@@ -103,17 +103,17 @@ class StockStorageServiceIntegrationTest extends AbstractPostgresIntegrationTest
 	}
 
 	@Test
-	@DisplayName("filters history to a requested window, with the stored decimals intact")
-	void filtersHistoryByWindow() {
+	@DisplayName("stores money at the column's scale, keeping sub-cent precision through the round trip")
+	void keepsDecimalPrecisionThroughTheRoundTrip() {
 		storageService.store(snapshot(new BigDecimal("310.44"), RETRIEVED, List.of(
 				bar(SESSION.minusSeconds(172800), "320.00", 1L),
 				bar(SESSION.minusSeconds(86400), "323.00", 2L),
 				bar(SESSION, "0.1000", 3L))), "1d");
 
-		List<StockPriceBarEntity> window = storageService.history(SYMBOL, "1d", SESSION.minusSeconds(86400), SESSION);
+		List<StockPriceBarEntity> history = storageService.history(SYMBOL, "1d");
 
-		assertThat(window).extracting(StockPriceBarEntity::getBarTimestamp)
-				.containsExactly(SESSION, SESSION.minusSeconds(86400));
-		assertThat(window.getFirst().getClose()).isEqualByComparingTo(new BigDecimal("0.1"));
+		assertThat(history).extracting(StockPriceBarEntity::getBarTimestamp)
+				.containsExactly(SESSION, SESSION.minusSeconds(86400), SESSION.minusSeconds(172800));
+		assertThat(history.getFirst().getClose()).isEqualByComparingTo(new BigDecimal("0.1"));
 	}
 }

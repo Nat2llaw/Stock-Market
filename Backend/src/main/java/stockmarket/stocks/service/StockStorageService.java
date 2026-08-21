@@ -72,10 +72,4 @@ public class StockStorageService {
 	public List<StockPriceBarEntity> history(String symbol, String interval) {
 		return barRepository.findBySymbolAndBarIntervalOrderByBarTimestampDesc(symbol, interval);
 	}
-
-	@Transactional(readOnly = true)
-	public List<StockPriceBarEntity> history(String symbol, String interval, Instant from, Instant to) {
-		return barRepository.findBySymbolAndBarIntervalAndBarTimestampBetweenOrderByBarTimestampDesc(symbol, interval,
-				from, to);
-	}
 }

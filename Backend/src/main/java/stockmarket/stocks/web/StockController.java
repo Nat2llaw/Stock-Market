@@ -1,13 +1,10 @@
 package stockmarket.stocks.web;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,14 +34,12 @@ public class StockController {
 	private final StockStorageService storageService;
 	private final StockRetrievalService retrievalService;
 	private final YahooFinanceProperties properties;
-	private final Clock clock;
 
 	public StockController(StockStorageService storageService, StockRetrievalService retrievalService,
-			YahooFinanceProperties properties, Clock clock) {
+			YahooFinanceProperties properties) {
 		this.storageService = storageService;
 		this.retrievalService = retrievalService;
 		this.properties = properties;
-		this.clock = clock;
 	}
 
 	@GetMapping("/default")
@@ -64,30 +59,6 @@ public class StockController {
 				effectiveInterval,
 				QuoteResponse.from(requireQuote(normalisedSymbol)),
 				toResponses(storageService.history(normalisedSymbol, effectiveInterval)));
-	}
-
-	@GetMapping("/{symbol}/quote")
-	public QuoteResponse quote(
-			@PathVariable @Ticker String symbol) {
-		return QuoteResponse.from(requireQuote(normalise(symbol)));
-	}
-
-	@GetMapping("/{symbol}/history")
-	public List<PriceBarResponse> history(
-			@PathVariable @Ticker String symbol,
-			@RequestParam(required = false) String interval,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant from,
-			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Instant to) {
-
-		String normalisedSymbol = normalise(symbol);
-		String effectiveInterval = orDefault(interval, properties.defaultInterval());
-
-		if (from == null && to == null) {
-			return toResponses(storageService.history(normalisedSymbol, effectiveInterval));
-		}
-		return toResponses(storageService.history(normalisedSymbol, effectiveInterval,
-				from == null ? Instant.EPOCH : from,
-				to == null ? Instant.now(clock) : to));
 	}
 
 	@PostMapping("/{symbol}/refresh")

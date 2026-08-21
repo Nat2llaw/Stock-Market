@@ -15,9 +15,6 @@ public interface StockPriceBarRepository extends JpaRepository<StockPriceBarEnti
 
 	List<StockPriceBarEntity> findBySymbolAndBarIntervalOrderByBarTimestampDesc(String symbol, String barInterval);
 
-	List<StockPriceBarEntity> findBySymbolAndBarIntervalAndBarTimestampBetweenOrderByBarTimestampDesc(
-			String symbol, String barInterval, Instant from, Instant to);
-
 	@Modifying
 	@Query(value = """
 			insert into stock_price_bar
